@@ -1,0 +1,48 @@
+{
+  "name": "enterprise-rag-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.build.json && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "gen:api": "openapi-typescript http://127.0.0.1:8000/openapi.json -o src/api/schema.d.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.59.0",
+    "markdown-it": "14.3.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6",
+    "zustand": "4.5.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.0",
+    "@testing-library/jest-dom": "6.5.0",
+    "@testing-library/react": "16.0.1",
+    "@types/markdown-it": "14.1.2",
+    "@types/node": "20.16.5",
+    "@types/react": "18.3.5",
+    "@types/react-dom": "18.3.0",
+    "@typescript-eslint/eslint-plugin": "8.7.0",
+    "@typescript-eslint/parser": "8.7.0",
+    "@vitejs/plugin-react": "4.3.1",
+    "eslint": "8.57.1",
+    "eslint-plugin-react": "7.36.1",
+    "eslint-plugin-react-hooks": "4.6.2",
+    "jsdom": "25.0.1",
+    "openapi-typescript": "7.4.1",
+    "typescript": "5.6.2",
+    "vite": "5.4.8",
+    "vitest": "2.1.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

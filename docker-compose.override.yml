@@ -1,0 +1,21 @@
+# Local development overrides (auto-loaded by `docker compose`; NOT by
+# `docker compose -f docker-compose.yml`). docs/ARCHITECTURE.md §27.3.
+#
+# Mounts the source tree and enables hot reload for the api and worker. The api
+# keeps the fail-fast `python -m app.server` entrypoint (APP_RELOAD switches it to
+# uvicorn --reload).
+
+services:
+  api:
+    environment:
+      APP_RELOAD: "true"
+      APP_LOG_JSON: "false"
+    volumes:
+      - ./backend/app:/app/app
+
+  worker:
+    command: ["arq", "app.workers.worker.WorkerSettings", "--watch", "/app/app"]
+    environment:
+      APP_LOG_JSON: "false"
+    volumes:
+      - ./backend/app:/app/app

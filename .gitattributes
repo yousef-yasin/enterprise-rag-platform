@@ -1,0 +1,38 @@
+# Normalise line endings. Container entrypoints and shell scripts MUST be LF
+# (docs/ARCHITECTURE.md §2 — CRLF breaks `#!/bin/sh` inside images on Windows).
+* text=auto eol=lf
+
+*.py         text eol=lf
+*.pyi        text eol=lf
+*.sh         text eol=lf
+*.toml       text eol=lf
+*.cfg        text eol=lf
+*.ini        text eol=lf
+*.yml        text eol=lf
+*.yaml       text eol=lf
+*.json       text eol=lf
+*.md         text eol=lf
+*.conf       text eol=lf
+*.html       text eol=lf
+*.env        text eol=lf
+Makefile     text eol=lf
+Dockerfile   text eol=lf
+*.dockerfile text eol=lf
+.dockerignore text eol=lf
+.gitattributes text eol=lf
+.gitignore   text eol=lf
+
+/backend/**  text eol=lf
+/frontend/** text eol=lf
+/docker/**   text eol=lf
+/scripts/**  text eol=lf
+
+# Binary assets
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.woff  binary
+*.woff2 binary

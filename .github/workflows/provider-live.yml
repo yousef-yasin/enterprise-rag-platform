@@ -1,0 +1,61 @@
+name: provider-live
+
+# Exercises the real hosted provider adapters (OpenAI / Anthropic) against their
+# APIs. Never runs on push/PR — it costs money and needs secrets. Manual, or a
+# weekly cron. Skips cleanly when the secrets are absent (e.g. on forks).
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.12.9"
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    env:
+      RAG_INTEGRATION: "1"
+      RAG_LIVE_PROVIDERS: "1"
+      APP_PROFILE: local
+      POSTGRES_HOST: 127.0.0.1
+      QDRANT_URL: http://127.0.0.1:6333
+      REDIS_HOST: 127.0.0.1
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: check for provider secrets
+        id: gate
+        run: |
+          if [ -n "$OPENAI_API_KEY" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::no provider secrets configured — skipping live tests"
+          fi
+
+      - if: steps.gate.outputs.run == 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - if: steps.gate.outputs.run == 'true'
+        run: docker compose -f compose.test.yml up -d --wait
+
+      - if: steps.gate.outputs.run == 'true'
+        working-directory: backend
+        run: uv sync --frozen --extra dev
+
+      - if: steps.gate.outputs.run == 'true'
+        working-directory: backend
+        run: uv run pytest -m live -p no:warnings
+
+      - if: always()
+        run: docker compose -f compose.test.yml down -v

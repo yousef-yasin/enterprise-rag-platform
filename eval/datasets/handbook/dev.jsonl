@@ -1,0 +1,10 @@
+{"question": "How many days of paid annual leave do full-time employees get?", "answer": "25 days per year.", "relevant_doc_names": ["handbook.md"], "should_abstain": false}
+{"question": "How many weeks of paid parental leave do primary caregivers get?", "answer": "16 weeks.", "relevant_doc_names": ["handbook.md"], "should_abstain": false}
+{"question": "How many days per week can employees work remotely with manager approval?", "answer": "Up to 3 days per week.", "relevant_doc_names": ["handbook.md"], "should_abstain": false}
+{"question": "Do business expenses under $75 need pre-approval?", "answer": "No, expenses under $75 do not require pre-approval.", "relevant_doc_names": ["handbook.md"], "should_abstain": false}
+{"question": "How often are Restricted-system access reviews performed?", "answer": "Quarterly.", "relevant_doc_names": ["security-policy.md"], "should_abstain": false}
+{"question": "How often do service accounts rotate credentials?", "answer": "Every 90 days.", "relevant_doc_names": ["security-policy.md"], "should_abstain": false}
+{"question": "What is the four-tier data classification scheme?", "answer": "Public, Internal, Confidential, Restricted.", "relevant_doc_names": ["security-policy.md"], "should_abstain": false}
+{"question": "What is the office coffee budget?", "answer": null, "should_abstain": true}
+{"question": "Who won the 2022 employee of the year award?", "answer": null, "should_abstain": true}
+{"question": "What is the wifi password for the Berlin office?", "answer": null, "should_abstain": true}

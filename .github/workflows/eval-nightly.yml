@@ -1,0 +1,58 @@
+name: eval-nightly
+
+on:
+  schedule:
+    - cron: "0 4 * * *" # 04:00 UTC daily
+  workflow_dispatch:
+    inputs:
+      dataset:
+        description: dataset name under eval/datasets
+        default: handbook
+      split:
+        description: split to run
+        default: smoke
+
+permissions:
+  contents: read
+
+env:
+  UV_VERSION: "0.12.9"
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    env:
+      RAG_INTEGRATION: "1"
+      APP_PROFILE: ci
+      LLM_PROVIDER: fake
+      EMBEDDING_PROVIDER: fake
+      RERANKER: none
+      POSTGRES_HOST: 127.0.0.1
+      QDRANT_URL: http://127.0.0.1:6333
+      REDIS_HOST: 127.0.0.1
+      DATASET: ${{ github.event.inputs.dataset || 'handbook' }}
+      SPLIT: ${{ github.event.inputs.split || 'smoke' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: docker compose -f compose.test.yml up -d --wait
+      - working-directory: backend
+        run: uv sync --frozen
+      - working-directory: backend
+        run: uv run alembic upgrade head
+
+      - name: seed a KB with the corpus and run the eval
+        working-directory: backend
+        run: uv run python ../scripts/run_eval.py --dataset "$DATASET" --split "$SPLIT"
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-${{ env.DATASET }}-${{ env.SPLIT }}
+          path: backend/eval-result.json
+          if-no-files-found: warn
+      - if: always()
+        run: docker compose -f compose.test.yml down -v

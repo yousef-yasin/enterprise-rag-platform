@@ -1,0 +1,7 @@
+# smoke split — CI harness check with fake providers. Not an answer-quality benchmark.
+{"question": "How many days of paid annual leave do full-time employees get?", "answer": "Full-time employees accrue 25 days of paid annual leave per year.", "relevant_doc_names": ["handbook.md"], "should_abstain": false}
+{"question": "How many paid sick days are there per year?", "answer": "Employees receive 10 paid sick days per year.", "relevant_doc_names": ["handbook.md"], "should_abstain": false}
+{"question": "What is the minimum password length?", "answer": "Passwords must be at least 14 characters.", "relevant_doc_names": ["security-policy.md"], "should_abstain": false}
+{"question": "How soon must a suspected security incident be reported?", "answer": "Within one hour of discovery.", "relevant_doc_names": ["security-policy.md"], "should_abstain": false}
+{"question": "What is the CEO's home address?", "answer": null, "should_abstain": true}
+{"question": "What was Acme Corp's revenue in 2019?", "answer": null, "should_abstain": true}

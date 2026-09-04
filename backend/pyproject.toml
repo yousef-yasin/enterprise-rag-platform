@@ -1,0 +1,124 @@
+[project]
+name = "enterprise-rag-platform-backend"
+version = "0.0.0"
+description = "Enterprise RAG platform — API and worker backend."
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "structlog>=24.4",
+    "arq>=0.26",
+    "redis>=5.2",
+    "httpx>=0.27",
+    "asyncpg>=0.30",
+    "qdrant-client>=1.12",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "alembic>=1.14",
+    "pyjwt>=2.10",
+    "argon2-cffi>=23.1",
+    "python-multipart>=0.0.18",
+    "pypdf>=5.1",
+    "python-docx>=1.1",
+    "markdown-it-py>=3.0",
+    "defusedxml>=0.7",
+    "charset-normalizer>=3.4",
+    "py3langid>=0.3",
+    "fastembed>=0.5",
+    "numpy>=1.26",
+    "prometheus-client>=0.21",
+    "openai>=1.57",
+    "anthropic>=0.42",
+    "tiktoken>=0.8",
+    "email-validator>=2.2",
+]
+
+[project.optional-dependencies]
+# Opt-in, not installed by default (ADR 0004 / ARCHITECTURE §27.5).
+heavy = ["sentence-transformers>=3.3", "unstructured>=0.16"]
+s3 = ["aioboto3>=13.2"]
+
+[project.scripts]
+rag = "app.cli.main:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "asyncpg-stubs>=0.30",
+    "respx>=0.22",
+    "fpdf2>=2.8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# ── ruff ────────────────────────────────────────────────────────────────────
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "ASYNC", "PTH", "N", "C4"]
+ignore = ["B008"]  # FastAPI dependency-injection default-argument idiom
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+"backend/alembic/**" = ["E501"]
+"alembic/**" = ["E501", "F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ── mypy ────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests"]
+exclude = ["alembic/versions/"]
+
+[[tool.mypy.overrides]]
+module = [
+    "arq.*",
+    "fastembed.*",
+    "defusedxml.*",
+    "py3langid.*",
+    "docx.*",
+    "aioboto3.*",
+    "tokenizers.*",
+    "qdrant_client.*",
+]
+ignore_missing_imports = true
+
+# ── pytest ──────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+markers = [
+    "integration: needs live infra (postgres/qdrant/redis); enable with RAG_INTEGRATION=1",
+    "e2e: full-stack end-to-end flow",
+    "live: calls a real hosted provider API; enable with RAG_LIVE_PROVIDERS=1 + keys",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:starlette.*",
+    "ignore::DeprecationWarning:httpx.*",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+omit = ["app/server.py", "alembic/*"]

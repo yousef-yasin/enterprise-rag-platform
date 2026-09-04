@@ -1,0 +1,17 @@
+# Keep the build context minimal and secret-free (docs/ARCHITECTURE.md §27.5).
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+tests/
+.env
+.env.*
+*.md
+.git/
+.github/
