@@ -66,3 +66,7 @@ review the migration by hand → confirm `uv run alembic check` is clean and tha
 ## Reporting security issues
 
 See [`SECURITY.md`](SECURITY.md) — not the public issue tracker.
+
+## Code of conduct
+
+See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).

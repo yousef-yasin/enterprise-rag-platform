@@ -31,7 +31,7 @@ rag user create --email you@example.com --admin
 
 # 2. run
 rag eval run <name> --kb <kb-uuid> --split smoke
-rag eval run <name> --kb <kb-uuid> --split test --label "rrf+rerank"
+rag eval run <name> --kb <kb-uuid> --split dev --label "rrf+rerank"
 
 # 3. compare two runs with bootstrap difference CIs
 rag eval compare <run-a> <run-b>

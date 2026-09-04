@@ -1,8 +1,13 @@
 # enterprise-rag-platform — System Design
 
-> Design phase. No application code yet. This document is the contract that the
-> implementation phases (§38) are measured against. Revision 2 incorporates the
-> pre-approval architecture review (see §42 for the change log).
+> **Status: implemented.** This document was written as the pre-implementation
+> design contract (§38 lists the build phases it was measured against) and is
+> kept as the project's source of truth for how and why the system is built the
+> way it is — it is not a changelog of the running system. For current status,
+> what shipped, and known limitations, see [`README.md`](../README.md),
+> [`CHANGELOG.md`](../CHANGELOG.md), and [`docs/RESULTS.md`](RESULTS.md).
+> Revision 2 incorporates the pre-approval architecture review (see §42 for the
+> change log).
 
 **Goal:** an open-source, production-oriented RAG platform. Upload documents, ask
 grounded questions, get answers with validated citations, inspect retrieval, run
@@ -54,7 +59,7 @@ There is **no fully-open, fake-answer default**. Pick a path:
 cp .env.example .env          # or: make setup
 # edit .env: set LLM_API_KEY (OpenAI or Anthropic)
 docker compose up --build
-# UI: http://127.0.0.1:8080 ; API docs: http://127.0.0.1:8000/docs
+# UI: http://127.0.0.1:8080 ; API docs: http://127.0.0.1:8000/api/v1/docs
 ```
 
 - Generation: hosted provider (`LLM_PROVIDER=openai|anthropic`).
@@ -1050,8 +1055,8 @@ never be silently lost" true even across a Redis restart.
 - REST + JSON under `/api/v1`. Streaming on dedicated `*/stream` endpoints (SSE),
   consumed by the client via `fetch` + `ReadableStream` (so `Authorization` headers
   work — `EventSource` cannot set them).
-- OpenAPI at `/openapi.json`, Swagger at `/docs`. Frontend types generated from it;
-  CI drift check.
+- OpenAPI at `/api/v1/openapi.json`, Swagger at `/api/v1/docs`. Frontend types
+  generated from it; CI drift check.
 
 ### 23.1 Endpoints
 

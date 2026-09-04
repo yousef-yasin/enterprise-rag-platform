@@ -1,7 +1,6 @@
 # enterprise-rag-platform — developer commands (docs/ARCHITECTURE.md §35).
-# Run from a POSIX shell (on Windows: the WSL2 shell — see ARCHITECTURE.md §2).
-# Later-phase targets print an explicit notice and exit non-zero rather than
-# pretending to work.
+# Run from a POSIX shell (on Windows: WSL2 or Git Bash — see ARCHITECTURE.md §2).
+# Run `make help` for the full target list.
 
 .DEFAULT_GOAL := help
 SHELL := /usr/bin/env bash
