@@ -1,16 +1,23 @@
 # Screenshots
 
-Not yet captured. This is the planned shot list for the README's
-[Demo](../../README.md#demo) section and any external portfolio write-up.
+Captured from a real local run (`docker compose up`, fake providers,
+`docs/ARCHITECTURE.md` §2 Path A) and referenced from the README's
+[Demo](../../README.md#demo) section:
 
-1. **Login / registration** — the auth screen.
-2. **Knowledge bases** — list + member management (owner/editor/viewer roles).
-3. **Document upload** — a document moving through `pending` → `processing` →
-   `ready`, including a deliberately-failed upload showing a failure reason.
-4. **Chat** — a streamed answer with `[[n]]` citation chips, the source panel,
-   and the feedback thumbs.
-5. **Abstention** — an off-topic question correctly refused.
-6. **Evaluation** — the runs list with bootstrap 95% confidence intervals.
+1. `01-login.png` — **Login / registration** — the auth screen.
+2. `02-knowledge-bases.png` — **Knowledge bases** — list + create form.
+3. `03-document-ready.png` — **Document upload** — a document that reached
+   `ready` after ingestion.
+4. `04-chat-citations.png` — **Chat** — a streamed answer with `[[n]]`
+   citation chips and the source panel.
+
+Not yet captured (see [How to capture](#how-to-capture) below):
+
+5. **Member management** — the owner/editor/viewer role UI.
+6. **A deliberately-failed upload** showing a failure reason.
+7. **Abstention** — an off-topic question correctly refused.
+8. **Evaluation** — the runs list with bootstrap 95% confidence intervals
+   (needs a real `rag eval run`, not the fake-provider smoke flow).
 
 ## How to capture
 

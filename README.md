@@ -110,11 +110,19 @@ base so there's something to ask about right away. See
 
 ## Demo
 
-Screenshots and a short walkthrough GIF haven't been captured yet — see
-[`docs/screenshots/`](docs/screenshots/) for the planned shot list. In the
-meantime, `make e2e` above is a scripted, zero-setup proof that the full flow
-(upload → ingest → cited answer) works end to end, and the API is self-
-documenting at `/api/v1/docs` once the stack is up.
+Screenshots below are from a real local run (`docker compose up`, fake
+providers) of the golden flow described in [Try it in 60 seconds](#try-it-in-60-seconds-no-api-key).
+A walkthrough GIF hasn't been captured yet — see [`docs/screenshots/`](docs/screenshots/)
+for the remaining shot list. `make e2e` is a scripted, zero-setup proof that
+the full flow (upload → ingest → cited answer) works end to end, and the API
+is self-documenting at `/api/v1/docs` once the stack is up.
+
+| | |
+|---|---|
+| ![Sign in / register](docs/screenshots/01-login.png) | ![Knowledge bases](docs/screenshots/02-knowledge-bases.png) |
+| Sign in / register | Knowledge bases |
+| ![Document ready](docs/screenshots/03-document-ready.png) | ![Chat with citations](docs/screenshots/04-chat-citations.png) |
+| Document ingested and ready | Streamed answer with `[[n]]` citations + source panel |
 
 ---
 
