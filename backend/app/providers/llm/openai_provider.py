@@ -78,15 +78,19 @@ class OpenAIProvider:
         max_tokens: int | None = None,
         stop: Sequence[str] | None = None,
     ) -> AsyncIterator[LLMDelta]:
+        kwargs: dict[str, Any] = {
+            "model": self.caps.model_id,
+            "messages": self._to_openai(messages),
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+        if stop:
+            # Omit rather than pass `stop=None`: some OpenAI-compatible endpoints
+            # (e.g. Gemini) reject an explicit null for this field.
+            kwargs["stop"] = list(stop)
         try:
-            stream = await self._client.chat.completions.create(
-                model=self.caps.model_id,
-                messages=self._to_openai(messages),
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stop=list(stop) if stop else None,
-                stream=True,
-            )
+            stream = await self._client.chat.completions.create(**kwargs)
         except Exception as exc:
             raise LLMStreamError(f"OpenAI stream failed to start: {exc}") from exc
         try:

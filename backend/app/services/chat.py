@@ -15,7 +15,7 @@ from app.config import Settings
 from app.core import citations as cit
 from app.core.contextualize import build_rewrite_messages, clean_rewrite
 from app.core.enums import MessageRole, RetrievalMode
-from app.core.errors import LLMStreamError
+from app.core.errors import AppError, LLMStreamError
 from app.core.interfaces.llm import LLMProvider
 from app.core.models import ScoredChunk, TokenUsage
 from app.core.prompts import _SYSTEM as _SYSTEM_PROMPT_TEXT
@@ -125,74 +125,96 @@ class ChatService:
 
         started = time.perf_counter()
         timings: dict[str, float] = {}
-        llm = build_llm_provider(self._settings)
 
-        conv, history = await self._load_context(conversation_id, user_id)
+        # Everything through context assembly runs before any SSE frame is yielded,
+        # but StreamingResponse has already committed HTTP 200 + SSE headers by the
+        # time this generator is first iterated (Starlette sends the response start
+        # message before pulling the first item from the body iterator). Once that
+        # has happened, an exception can no longer change the status code — it just
+        # resets the connection, which the browser surfaces as an opaque "connection
+        # lost" rather than a clean error. So, matching the existing generation-stage
+        # handling below, retrieval/context-assembly failures (e.g. the KB embedding-
+        # profile-mismatch ConflictError) are caught here and turned into a proper
+        # SSE 'error' event instead of an unhandled exception.
+        try:
+            llm = build_llm_provider(self._settings)
 
-        t = time.perf_counter()
-        search_query, rewritten = await self._rewrite(llm, message, history)
-        timings["rewrite"] = round((time.perf_counter() - t) * 1000, 1)
+            conv, history = await self._load_context(conversation_id, user_id)
 
-        result = await self._retrieval.retrieve(
-            knowledge_base_id=kb.id,
-            kb_active_profile=kb.active_embedding_profile_id,
-            search_query=search_query,
-            mode=mode,
-            overrides=overrides,
-        )
-        timings.update(result.latency_ms)
+            t = time.perf_counter()
+            search_query, rewritten = await self._rewrite(llm, message, history)
+            timings["rewrite"] = round((time.perf_counter() - t) * 1000, 1)
 
-        if result.abstention.abstain:
-            ABSTENTION.labels(reason=result.abstention.reason or "unknown").inc()
-            refusal = EMPTY_KB_REFUSAL if result.abstention.reason == "empty_kb" else REFUSAL_TEXT
-            persisted = await self._persist(
-                kb=kb,
-                conv=conv,
-                user_id=user_id,
-                message=message,
+            result = await self._retrieval.retrieve(
+                knowledge_base_id=kb.id,
+                kb_active_profile=kb.active_embedding_profile_id,
                 search_query=search_query,
-                rewritten=rewritten,
-                answer=refusal,
-                context_chunks=[],
-                citation_result=None,
-                usage=TokenUsage(0, 0),
-                cost=0.0,
-                result=result,
-                timings=timings,
-                abstained=True,
-                low_confidence=False,
-                finish_reason="abstained",
+                mode=mode,
+                overrides=overrides,
             )
-            yield {"type": "token", "text": refusal}
-            yield {
-                "type": "done",
-                "answer": refusal,
-                "citations": [],
-                "abstained": True,
-                "low_confidence": False,
-                "degraded": result.degraded,
-                "trace_id": persisted["trace_id"],
-                "conversation_id": persisted["conversation_id"],
-                "message_id": persisted["message_id"],
-                "usage": {"prompt_tokens": 0, "completion_tokens": 0},
-                "cost_usd": 0.0,
-            }
-            return
+            timings.update(result.latency_ms)
 
-        context_chunks = await self._hydrate(result.candidates)
-        assembled = assemble_context(
-            context_chunks,
-            inputs=self._budget_inputs(llm, message),
-            count_tokens=llm.count_tokens,
-            expand=lambda c: c.content,
-        )
-        history_trimmed = trim_history(
-            history, budget=assembled.history_token_budget, count_tokens=llm.count_tokens
-        )
-        prompt = build_messages(
-            question=message, context_blocks=assembled.blocks, history=history_trimmed
-        )
-        prompt_tokens = sum(llm.count_tokens(m.content) for m in prompt)
+            if result.abstention.abstain:
+                ABSTENTION.labels(reason=result.abstention.reason or "unknown").inc()
+                refusal = (
+                    EMPTY_KB_REFUSAL if result.abstention.reason == "empty_kb" else REFUSAL_TEXT
+                )
+                persisted = await self._persist(
+                    kb=kb,
+                    conv=conv,
+                    user_id=user_id,
+                    message=message,
+                    search_query=search_query,
+                    rewritten=rewritten,
+                    answer=refusal,
+                    context_chunks=[],
+                    citation_result=None,
+                    usage=TokenUsage(0, 0),
+                    cost=0.0,
+                    result=result,
+                    timings=timings,
+                    abstained=True,
+                    low_confidence=False,
+                    finish_reason="abstained",
+                )
+                yield {"type": "token", "text": refusal}
+                yield {
+                    "type": "done",
+                    "answer": refusal,
+                    "citations": [],
+                    "abstained": True,
+                    "low_confidence": False,
+                    "degraded": result.degraded,
+                    "trace_id": persisted["trace_id"],
+                    "conversation_id": persisted["conversation_id"],
+                    "message_id": persisted["message_id"],
+                    "usage": {"prompt_tokens": 0, "completion_tokens": 0},
+                    "cost_usd": 0.0,
+                }
+                return
+
+            context_chunks = await self._hydrate(result.candidates)
+            assembled = assemble_context(
+                context_chunks,
+                inputs=self._budget_inputs(llm, message),
+                count_tokens=llm.count_tokens,
+                expand=lambda c: c.content,
+            )
+            history_trimmed = trim_history(
+                history, budget=assembled.history_token_budget, count_tokens=llm.count_tokens
+            )
+            prompt = build_messages(
+                question=message, context_blocks=assembled.blocks, history=history_trimmed
+            )
+            prompt_tokens = sum(llm.count_tokens(m.content) for m in prompt)
+        except AppError as exc:
+            _log.warning("chat.pre_generation_failed", code=exc.code, message=exc.message)
+            yield {"type": "error", "code": exc.code, "message": exc.message}
+            return
+        except Exception:
+            _log.exception("chat.pre_generation_failed")
+            yield {"type": "error", "code": "internal", "message": "request failed"}
+            return
 
         # ── generation ─────────────────────────────────────────────────────
         answer_parts: list[str] = []
