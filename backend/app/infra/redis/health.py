@@ -15,11 +15,8 @@ _NAME = "redis"
 
 async def probe_redis(settings: Settings) -> DependencyStatus:
     watch = Stopwatch()
-    client: Redis = Redis(
-        host=settings.redis_host,
-        port=settings.redis_port,
-        password=settings.redis_password.get_secret_value(),
-        db=settings.redis_db,
+    client: Redis = Redis.from_url(
+        settings.redis_dsn,
         socket_timeout=settings.redis_timeout_s,
         socket_connect_timeout=settings.redis_timeout_s,
     )

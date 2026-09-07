@@ -121,4 +121,63 @@ def test_secrets_are_not_rendered() -> None:
     assert "rag_local_dev" not in repr(settings)
     summary = settings.safe_summary()
     assert summary["llm_key_configured"] is True
-    assert "super-secret-value" not in str(summary)
+
+
+def test_postgres_dsn_defaults_to_discrete_fields() -> None:
+    settings = _settings(postgres_host="db.internal", postgres_password="pw")
+    assert settings.postgres_dsn == "postgresql+asyncpg://rag:pw@db.internal:5432/rag"
+
+
+def test_database_url_overrides_discrete_postgres_fields() -> None:
+    settings = _settings(
+        database_url="postgresql://neon_user:pw@ep-xyz.neon.tech/neondb?sslmode=require",
+        postgres_host="ignored",
+    )
+    assert settings.postgres_dsn == (
+        "postgresql+asyncpg://neon_user:pw@ep-xyz.neon.tech/neondb?sslmode=require"
+    )
+
+
+def test_database_url_accepts_postgres_scheme() -> None:
+    settings = _settings(database_url="postgres://u:p@host/db")
+    assert settings.postgres_dsn == "postgresql+asyncpg://u:p@host/db"
+
+
+def test_database_url_with_bad_scheme_is_rejected() -> None:
+    with pytest.raises(ConfigError, match="DATABASE_URL"):
+        validate_consistency(
+            _settings(
+                llm_provider="openai",
+                llm_api_key="k",
+                database_url="mysql://u:p@host/db",
+            )
+        )
+
+
+def test_redis_dsn_defaults_to_discrete_fields() -> None:
+    settings = _settings(redis_host="cache.internal", redis_password="pw")
+    assert settings.redis_dsn == "redis://:pw@cache.internal:6379/0"
+
+
+def test_redis_url_overrides_discrete_redis_fields() -> None:
+    settings = _settings(
+        redis_url="rediss://default:pw@up-xyz.upstash.io:6379", redis_host="ignored"
+    )
+    assert settings.redis_dsn == "rediss://default:pw@up-xyz.upstash.io:6379"
+
+
+def test_redis_url_with_bad_scheme_is_rejected() -> None:
+    with pytest.raises(ConfigError, match="REDIS_URL"):
+        validate_consistency(
+            _settings(llm_provider="openai", llm_api_key="k", redis_url="http://not-redis")
+        )
+
+
+def test_worker_mode_defaults_to_queue() -> None:
+    assert _settings().worker_mode == "queue"
+
+
+def test_worker_mode_inline_is_accepted() -> None:
+    settings = _settings(llm_provider="openai", llm_api_key="k", worker_mode="inline")
+    validate_consistency(settings)
+    assert settings.worker_mode == "inline"

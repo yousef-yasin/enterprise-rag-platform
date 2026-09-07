@@ -65,6 +65,25 @@ class StorageBackend(StrEnum):
     S3 = "s3"
 
 
+class WorkerMode(StrEnum):
+    """How background jobs (ingestion, reprocessing, deletion) get processed.
+
+    QUEUE  — enqueue to arq/Redis; a separate ``arq`` worker process drains the
+             queue. Default; matches docker-compose's dedicated worker service.
+    INLINE — run the same task function synchronously in the caller (no queue,
+             no separate process). For deployments with no standing worker
+             (docs/DEPLOYMENT.md "background jobs on Cloud Run"): the request
+             that triggers the job (e.g. document upload) blocks until it
+             finishes, so the deployment must raise its request timeout
+             accordingly. Cron jobs (reconciliation, trace GC, jobstream
+             reaping) do not run in this mode — there is no worker process to
+             run them.
+    """
+
+    QUEUE = "queue"
+    INLINE = "inline"
+
+
 HOSTED_LLM_PROVIDERS: frozenset[LLMProviderName] = frozenset(
     {LLMProviderName.OPENAI, LLMProviderName.ANTHROPIC}
 )
@@ -222,6 +241,10 @@ class Settings(BaseSettings):
     s3_region: str = "us-east-1"
 
     # ── PostgreSQL ───────────────────────────────────────────────────────
+    # DATABASE_URL, when set, overrides the discrete POSTGRES_* fields below —
+    # e.g. Neon's connection string (postgresql://...?sslmode=require). asyncpg
+    # parses `sslmode` natively from the URL, so no separate SSL setting exists.
+    database_url: SecretStr | None = None
     postgres_host: str = "postgres"
     postgres_port: int = 5432
     postgres_user: str = "rag"
@@ -240,6 +263,10 @@ class Settings(BaseSettings):
     qdrant_vectors_on_disk: bool = False
 
     # ── Redis ────────────────────────────────────────────────────────────
+    # REDIS_URL, when set, overrides the discrete REDIS_* fields below — e.g.
+    # Upstash's rediss:// (TLS) URL. Needed because the discrete fields alone
+    # cannot express TLS.
+    redis_url: SecretStr | None = None
     redis_host: str = "redis"
     redis_port: int = 6379
     redis_password: SecretStr = SecretStr("redis_local_dev")
@@ -255,6 +282,7 @@ class Settings(BaseSettings):
     rate_limit_burst: int = 40
     metrics_enabled: bool = True
     trusted_proxies: str = "127.0.0.1,::1"
+    worker_mode: WorkerMode = WorkerMode.QUEUE
     worker_health_port: int = 8080
     status_poll_interval_s: float = 2.0
     kb_monthly_cost_soft_limit_usd: float = 0.0
@@ -301,6 +329,9 @@ class Settings(BaseSettings):
 
     @property
     def postgres_dsn(self) -> str:
+        url = self.database_url.get_secret_value().strip() if self.database_url else ""
+        if url:
+            return _to_asyncpg_url(url)
         pwd = self.postgres_password.get_secret_value()
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{pwd}"
@@ -309,6 +340,9 @@ class Settings(BaseSettings):
 
     @property
     def redis_dsn(self) -> str:
+        url = self.redis_url.get_secret_value().strip() if self.redis_url else ""
+        if url:
+            return url
         pwd = self.redis_password.get_secret_value()
         return f"redis://:{pwd}@{self.redis_host}:{self.redis_port}/{self.redis_db}"
 
@@ -373,6 +407,23 @@ class Settings(BaseSettings):
 
 def _secret_present(value: SecretStr | None) -> bool:
     return value is not None and bool(value.get_secret_value().strip())
+
+
+def _to_asyncpg_url(url: str) -> str:
+    """Normalise a standard ``postgres(ql)://`` URL to the asyncpg driver scheme
+    SQLAlchemy needs. Any query string (e.g. Neon's ``?sslmode=require``) is
+    preserved as-is — asyncpg parses ``sslmode`` natively, so no separate SSL
+    handling is needed here."""
+
+    if url.startswith("postgresql+asyncpg://"):
+        return url
+    if url.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + url.removeprefix("postgresql://")
+    if url.startswith("postgres://"):
+        return "postgresql+asyncpg://" + url.removeprefix("postgres://")
+    raise ConfigError(
+        f"DATABASE_URL must start with postgresql:// or postgres:// (got {url[:20]!r}...)"
+    )
 
 
 def _format_problems(problems: list[str]) -> str:
@@ -454,6 +505,19 @@ def validate_consistency(settings: Settings) -> None:
 
     if settings.storage_backend is StorageBackend.S3 and not settings.s3_bucket:
         problems.append("STORAGE_BACKEND=s3 requires S3_BUCKET (and S3 credentials).")
+
+    database_url = settings.database_url.get_secret_value().strip() if settings.database_url else ""
+    if database_url:
+        try:
+            _to_asyncpg_url(database_url)
+        except ConfigError as exc:
+            problems.append(str(exc))
+
+    redis_url = settings.redis_url.get_secret_value().strip() if settings.redis_url else ""
+    if redis_url and not (redis_url.startswith("redis://") or redis_url.startswith("rediss://")):
+        problems.append(
+            f"REDIS_URL must start with redis:// or rediss:// (got {redis_url[:20]!r}...)"
+        )
 
     if problems:
         raise ConfigError(_format_problems(problems))

@@ -20,13 +20,7 @@ _log = structlog.get_logger("app.workers")
 
 
 def _redis_settings() -> RedisSettings:
-    settings = get_settings()
-    return RedisSettings(
-        host=settings.redis_host,
-        port=settings.redis_port,
-        password=settings.redis_password.get_secret_value(),
-        database=settings.redis_db,
-    )
+    return RedisSettings.from_dsn(get_settings().redis_dsn)
 
 
 async def on_startup(_ctx: dict[str, Any]) -> None:

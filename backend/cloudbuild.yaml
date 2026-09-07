@@ -1,0 +1,19 @@
+# Cloud Build config for the Cloud Run image (docs/DEPLOYMENT.md).
+# `gcloud builds submit` defaults to a file literally named `Dockerfile`; this
+# file points it at Dockerfile.cloudrun instead, without touching that default
+# lookup (so a plain `docker build .` in this directory still uses ./Dockerfile
+# for docker-compose, unaffected).
+#
+# Usage:
+#   gcloud builds submit --config=cloudbuild.yaml \
+#     --substitutions=_IMAGE=REGION-docker.pkg.dev/PROJECT_ID/erp/api:latest \
+#     .
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-f", "Dockerfile.cloudrun", "-t", "${_IMAGE}", "."]
+images:
+  - "${_IMAGE}"
+substitutions:
+  _IMAGE: erp-api:latest # override with --substitutions=_IMAGE=...
+options:
+  logging: CLOUD_LOGGING_ONLY

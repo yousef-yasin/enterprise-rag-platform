@@ -12,11 +12,8 @@ _client: Redis | None = None
 def get_redis(settings: Settings) -> Redis:
     global _client
     if _client is None:
-        _client = Redis(
-            host=settings.redis_host,
-            port=settings.redis_port,
-            password=settings.redis_password.get_secret_value(),
-            db=settings.redis_db,
+        _client = Redis.from_url(
+            settings.redis_dsn,
             socket_timeout=settings.redis_timeout_s,
             socket_connect_timeout=settings.redis_timeout_s,
             decode_responses=True,

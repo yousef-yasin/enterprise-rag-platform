@@ -29,12 +29,21 @@ def main() -> int:
     import uvicorn
 
     reload_enabled = _reload_enabled()
+    # Cloud Run (and similar PaaS targets) assign the listen port at runtime via
+    # $PORT; docker-compose does not set it, so 8000 (the compose-published port)
+    # stays the default for local/self-hosted use.
+    try:
+        port = int(os.environ.get("PORT", "8000"))
+    except ValueError:
+        msg = f"\nPORT must be an integer, got {os.environ['PORT']!r}\n"
+        print(msg, file=sys.stderr, flush=True)
+        return 1
     uvicorn.run(
         "app.main:app",
         # Binds all interfaces inside the container; compose publishes the port on
         # 127.0.0.1 only, and a non-loopback bind also forces AUTH_MODE=multi_user.
         host="0.0.0.0",  # nosec B104
-        port=8000,
+        port=port,
         reload=reload_enabled,
         reload_dirs=["/app/app"] if reload_enabled else None,
         log_config=None,

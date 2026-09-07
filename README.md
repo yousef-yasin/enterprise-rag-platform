@@ -126,6 +126,55 @@ is self-documenting at `/api/v1/docs` once the stack is up.
 
 ---
 
+## Public Demo
+
+**No public URL is currently live.** This project is not currently hosted
+anywhere — what follows are two prepared, audited deployment paths, not a
+claim that either is running right now.
+
+### Path A — self-hosted, $0, runs on your own PC (primary)
+
+**Cost: $0. No credit card, no billing account, ever.** Your own Windows PC
+is the server; a free [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)
+relays public traffic to it. Full guide, architecture diagram, exact
+commands, startup/shutdown procedure, troubleshooting, and security notes:
+[`docs/SELF_HOSTED_PUBLIC_DEMO.md`](docs/SELF_HOSTED_PUBLIC_DEMO.md).
+
+```powershell
+.\scripts\start-public-demo.ps1        # starts the stack, prints the local URL
+cloudflared tunnel --url http://localhost:8080   # in a second terminal — prints your public URL
+```
+
+**Limitation, stated plainly:** the public URL only works while your PC is
+on, Docker Desktop is running, the containers are up, `cloudflared` is
+running, and you have internet — this is a portfolio/demo deployment, not
+24/7 hosted infrastructure. See the doc above for exactly what that means in
+practice.
+
+### Path B — Cloud Run (optional future deployment)
+
+A separate, fully-prepared path to a cloud-hosted deployment (Cloudflare
+Pages + Google Cloud Run + Neon + Qdrant Cloud + Upstash + Cloudflare R2) —
+see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) and
+[`docs/DEPLOYMENT_ARCHITECTURE.md`](docs/DEPLOYMENT_ARCHITECTURE.md). Kept in
+the repository as a portfolio-relevant option, **not currently in use.**
+
+**This path may require billing.** Cloud Run needs a GCP project with a
+billing account attached (even to use free-tier quota), and its free tier
+does not cover an always-on worker process — that path's `WORKER_MODE=inline`
+trade-off is documented in `DEPLOYMENT_ARCHITECTURE.md`. Nothing in this
+repository has deployed to it; the Cloud Run image (`backend/Dockerfile.cloudrun`)
+has been built and verified to run correctly locally, but no GCP project has
+been provisioned.
+
+### Running locally (unaffected by either path)
+
+`docker compose up` still works exactly as documented in
+[Quick start](#quick-start) — neither deployment path changed local
+development.
+
+---
+
 ## Develop
 
 ```bash

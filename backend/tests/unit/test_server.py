@@ -43,3 +43,43 @@ def test_entrypoint_starts_uvicorn_when_config_is_valid(
 
     assert exit_code == 0
     assert started["app_path"] == "app.main:app"
+
+
+def test_entrypoint_defaults_to_port_8000_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    import uvicorn
+
+    started: dict[str, object] = {}
+    monkeypatch.setattr(uvicorn, "run", lambda _path, **kwargs: started.update(kwargs))
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert server.main() == 0
+    assert started["port"] == 8000
+
+
+def test_entrypoint_binds_platform_assigned_port(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Cloud Run (and similar PaaS targets) assign the listen port via $PORT."""
+    import uvicorn
+
+    started: dict[str, object] = {}
+    monkeypatch.setattr(uvicorn, "run", lambda _path, **kwargs: started.update(kwargs))
+    monkeypatch.setenv("PORT", "8080")
+
+    assert server.main() == 0
+    assert started["port"] == 8080
+
+
+def test_entrypoint_rejects_non_integer_port(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import uvicorn
+
+    def _must_not_run(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("uvicorn.run must not be reached on an invalid PORT")
+
+    monkeypatch.setattr(uvicorn, "run", _must_not_run)
+    monkeypatch.setenv("PORT", "not-a-number")
+
+    exit_code = server.main()
+
+    assert exit_code == 1
+    assert "PORT" in capsys.readouterr().err
