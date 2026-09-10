@@ -22,8 +22,11 @@ runs on every push with deterministic fake providers; see
 [Evaluation](#evaluation)), and a couple of moderate, non-exploitable frontend
 dependency advisories are tracked in [`CHANGELOG.md`](CHANGELOG.md).
 
-The full design rationale is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-(Revision 2) and the ADRs in [`docs/adr/`](docs/adr).
+**New here?** [`docs/PROJECT_GUIDE.md`](docs/PROJECT_GUIDE.md) is the complete,
+single-source guide — what it is, how it runs, the RAG pipeline, auth, config,
+troubleshooting, and honest limitations. The full design rationale is in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (Revision 2) and the ADRs in
+[`docs/adr/`](docs/adr).
 
 ---
 
@@ -258,7 +261,7 @@ backend/     FastAPI app, worker, providers, core pipeline, Alembic, tests
 frontend/    Vite + React + TS SPA, Playwright golden E2E
 eval/        corpus/  +  datasets/<name>/{smoke,dev,test}.jsonl
 seed/        small demo corpus loaded when SEED_ON_BOOTSTRAP=true
-docs/        ARCHITECTURE.md (source of truth), adr/, OPERATIONS.md, RESULTS.md
+docs/        PROJECT_GUIDE.md (start here), ARCHITECTURE.md (design source of truth), adr/, OPERATIONS.md, RESULTS.md
 scripts/     e2e_smoke.sh, run_eval.py
 ```
 
