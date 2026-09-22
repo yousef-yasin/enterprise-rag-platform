@@ -14,10 +14,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from app.infra.db.models import KnowledgeBaseMember  # noqa: E402
-from run_eval import _seed_kb  # noqa: E402
+from run_eval import _seed_kb  # type: ignore[import-not-found]  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
+
+from app.infra.db.models import KnowledgeBaseMember  # noqa: E402
 
 
 async def test_seed_kb_persists_member_with_added_at(db_session: AsyncSession) -> None:
