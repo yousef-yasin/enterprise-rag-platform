@@ -23,7 +23,8 @@ sys.path.insert(0, str(REPO_ROOT / "backend"))
 from app.config import get_settings  # noqa: E402
 from app.core.enums import KBRole  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
-from app.infra.db.models import KnowledgeBase, KnowledgeBaseMember, User  # noqa: E402
+from app.infra.db.models import KnowledgeBase, User  # noqa: E402
+from app.infra.db.repositories.knowledge_bases import KnowledgeBaseRepository  # noqa: E402
 from app.infra.db.session import session_scope  # noqa: E402
 from app.services.evaluation import EvaluationService  # noqa: E402
 from app.services.ingestion import IngestionPipeline  # noqa: E402
@@ -51,8 +52,8 @@ async def _seed_kb(dataset: str) -> uuid.UUID:
         )
         session.add(kb)
         await session.flush()
-        session.add(
-            KnowledgeBaseMember(knowledge_base_id=kb.id, user_id=user.id, role=KBRole.OWNER)
+        KnowledgeBaseRepository(session).add_member(
+            kb_id=kb.id, user_id=user.id, role=KBRole.OWNER, added_by=user.id
         )
         kb_id = kb.id
 
